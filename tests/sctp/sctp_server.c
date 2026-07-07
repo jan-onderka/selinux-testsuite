@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 	if (ipv4)
 		hints.ai_family = AF_INET;
 	else
-		hints.ai_family = AF_INET6;
+		hints.ai_family = ipv6_enabled() ? AF_INET6 : AF_INET;
 
 	if (!strcmp(argv[optind], "stream"))
 		hints.ai_socktype = SOCK_STREAM;

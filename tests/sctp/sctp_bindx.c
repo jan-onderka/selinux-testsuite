@@ -1,4 +1,5 @@
 #include "sctp_common.h"
+#include <errno.h>
 
 static void usage(char *progname)
 {
@@ -22,6 +23,7 @@ int main(int argc, char **argv)
 	unsigned short port;
 	bool rem = false;
 	bool verbose = false;
+	bool ipv6_bound = false;
 	char *context;
 
 	while ((opt = getopt(argc, argv, "rv")) != -1) {
@@ -58,7 +60,7 @@ int main(int argc, char **argv)
 		free(context);
 	}
 
-	sock = socket(PF_INET6, type, IPPROTO_SCTP);
+	sock = socket(ipv6_enabled() ? PF_INET6 : PF_INET, type, IPPROTO_SCTP);
 	if (sock < 0) {
 		perror("socket");
 		exit(1);
@@ -88,27 +90,41 @@ int main(int argc, char **argv)
 	ipv6.sin6_port = htons(port);
 	ipv6.sin6_addr = in6addr_loopback;
 
+	if (ipv6_enabled()) {
 	result = sctp_bindx(sock, (struct sockaddr *)&ipv6, 1,
 			    SCTP_BINDX_ADD_ADDR);
 	if (result < 0) {
-		perror("sctp_bindx ADD - ipv6");
-		close(sock);
-		exit(3);
+		if (verbose)
+			printf("sctp_bindx ADD - ipv6 not available\n");
+	} else {
+		ipv6_bound = true;
+		if (verbose)
+			printf("sctp_bindx ADD - ipv6\n");
+	}
 	}
 
-	if (verbose)
-		printf("sctp_bindx ADD - ipv6\n");
-
 	if (rem) {
-		result = sctp_bindx(sock, (struct sockaddr *)&ipv6, 1,
-				    SCTP_BINDX_REM_ADDR);
-		if (result < 0) {
-			perror("sctp_bindx - REM");
-			close(sock);
-			exit(4);
+		if (ipv6_bound) {
+			result = sctp_bindx(sock, (struct sockaddr *)&ipv6, 1,
+					    SCTP_BINDX_REM_ADDR);
+			if (result < 0) {
+				perror("sctp_bindx - REM");
+				close(sock);
+				exit(4);
+			}
+			if (verbose)
+				printf("sctp_bindx REM - ipv6\n");
+		} else {
+			result = sctp_bindx(sock, (struct sockaddr *)&ipv4, 1,
+					    SCTP_BINDX_REM_ADDR);
+			if (result < 0) {
+				perror("sctp_bindx - REM");
+				close(sock);
+				exit(4);
+			}
+			if (verbose)
+				printf("sctp_bindx REM - ipv4\n");
 		}
-		if (verbose)
-			printf("sctp_bindx REM - ipv6\n");
 	}
 
 	close(sock);

@@ -36,3 +36,5 @@ void print_ip_option(int fd, bool ipv4, char *text);
 int set_subscr_events(int fd, int data_io, int assoc, int addr, int shutd);
 int handle_event(void *buf, char *cmp_addr, sctp_assoc_t *assoc_id,
 		 bool verbose, char *text);
+
+bool ipv6_enabled(void);

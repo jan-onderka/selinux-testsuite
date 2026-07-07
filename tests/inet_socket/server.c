@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include <unistd.h>
+
 #ifndef SO_PEERSEC
 #define SO_PEERSEC 31
 #endif
@@ -34,6 +36,21 @@ void usage(char *progname)
 		"protocol  Protocol to use (tcp, udp, or mptcp)\n\t"
 		"port      Listening port\n", progname);
 	exit(1);
+}
+
+static bool ipv6_enabled(void)
+{
+	int fd;
+
+	if (access("/proc/net/if_inet6", F_OK) != 0)
+		return false;
+
+	fd = socket(AF_INET6, SOCK_DGRAM, 0);
+	if (fd < 0)
+		return false;
+
+	close(fd);
+	return true;
 }
 
 int main(int argc, char **argv)
@@ -64,7 +81,7 @@ int main(int argc, char **argv)
 
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_flags = AI_PASSIVE;
-	hints.ai_family = AF_INET6;
+	hints.ai_family = ipv6_enabled() ? AF_INET6 : AF_INET;
 
 	if (!strcmp(argv[optind], "tcp")) {
 		hints.ai_socktype = SOCK_STREAM;

@@ -344,3 +344,18 @@ int handle_event(void *buf, char *cmp_addr, sctp_assoc_t *assoc_id,
 
 	return EVENT_OK;
 }
+
+bool ipv6_enabled(void)
+{
+	int fd;
+
+	if (access("/proc/net/if_inet6", F_OK) != 0)
+		return false;
+
+	fd = socket(AF_INET6, SOCK_DGRAM, 0);
+	if (fd < 0)
+		return false;
+
+	close(fd);
+	return true;
+}
